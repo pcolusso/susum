@@ -1,0 +1,16 @@
+[package]
+name = "susum"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+throbber-widgets-tui = { version = "0.4.0", features = ["ratatui"] }
+color-eyre = "0.6.2"
+crossterm = { version = "0.27.0", features = ["event-stream"] }
+futures = "0.3.30"
+ratatui = "0.26.1"
+tokio = { version = "1.36.0", features = ["full"] }
+aws-config = { version = "1.1.5", features = ["behavior-version-latest"] }
+aws-sdk-ec2 = "1.19.0"
