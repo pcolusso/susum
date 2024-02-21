@@ -1,5 +1,8 @@
-use std::error;
+use crate::aws::{fuzzy_search_instances, get_instances, Instance};
 
+use color_eyre::Result;
+use ratatui::widgets::ListState;
+use std::error;
 use throbber_widgets_tui::ThrobberState;
 
 /// Application result type.
@@ -11,8 +14,11 @@ pub struct App {
     pub running: bool,
     pub throbber_state: throbber_widgets_tui::ThrobberState,
     pub query: String,
-    pub index: usize,
-    pub filtered: Vec<String>,
+    pub filtered: Vec<Instance>,
+    pub instances: Option<Result<Vec<Instance>>>,
+    pub list_state: ListState,
+    pub profile: String,
+    pub start_session: bool,
 }
 
 impl Default for App {
@@ -21,12 +27,11 @@ impl Default for App {
             running: true,
             query: "".to_string(),
             throbber_state: ThrobberState::default(),
-            index: 0,
-            filtered: vec![
-                "cool app 1".to_string(),
-                "cool app 2".to_string(),
-                "cool app 3".to_string(),
-            ],
+            filtered: vec![],
+            instances: None,
+            list_state: ListState::default(),
+            profile: std::env::var("AWS_PROFILE").unwrap_or("NOT SET".to_string()),
+            start_session: false,
         }
     }
 }
@@ -42,28 +47,65 @@ impl App {
         self.throbber_state.calc_next();
     }
 
+    pub async fn load(&mut self) {
+        if self.instances.is_none() {
+            let instances = get_instances().await;
+            match instances {
+                Ok(i) => self.instances = Some(Ok(i)),
+                Err(e) => self.instances = Some(Err(e)),
+            }
+            self.filter();
+        }
+    }
+
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
         self.running = false;
     }
 
+    pub fn start(&mut self) {
+        self.running = false;
+        self.start_session = true;
+    }
+
     pub fn push_char(&mut self, ch: char) {
         self.query.push(ch);
+        self.filter();
     }
 
     pub fn backspace(&mut self) {
         self.query.pop();
+        self.filter();
     }
 
     pub fn scroll_down(&mut self) {
-        if self.index < self.filtered.len() {
-            self.index += 1;
+        if let Some(i) = self.list_state.selected() {
+            if i < self.filtered.len() - 1 {
+                *self.list_state.selected_mut() = Some(i + 1);
+            }
         }
     }
 
     pub fn scroll_up(&mut self) {
-        if self.index > 0 {
-            self.index -= 1;
+        if let Some(i) = self.list_state.selected() {
+            if i > 0 {
+                *self.list_state.selected_mut() = Some(i - 1);
+            }
+        }
+    }
+
+    fn filter(&mut self) {
+        if let Some(Ok(is)) = self.instances.as_ref() {
+            // Inefficient, but i'm getting skill-issued.
+            let mut new_filter = vec![];
+            for f in fuzzy_search_instances(is, &self.query) {
+                new_filter.push(f.clone())
+            }
+            self.filtered = new_filter;
+            if self.filtered.len() > 0 && self.list_state.selected().is_none() {
+                *self.list_state.selected_mut() = Some(0);
+            }
+            *self.list_state.selected_mut() = Some(0)
         }
     }
 }

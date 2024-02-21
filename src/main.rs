@@ -1,6 +1,7 @@
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
+use std::process::{Command, Stdio};
 use susum::app::{App, AppResult};
 use susum::event::{Event, EventHandler};
 use susum::handler::handle_key_events;
@@ -20,6 +21,8 @@ async fn main() -> AppResult<()> {
 
     // Start the main loop.
     while app.running {
+        // Blocks, untill I can figure out this.
+        app.load().await;
         // Render the user interface.
         tui.draw(&mut app)?;
         // Handle events.
@@ -33,5 +36,33 @@ async fn main() -> AppResult<()> {
 
     // Exit the user interface.
     tui.exit()?;
+
+    let instance_id = match app.list_state.selected() {
+        Some(i) => Some(app.filtered[i].instance_id.clone()),
+        None => None,
+    };
+
+    if app.start_session && instance_id.is_some() {
+        let mut child = Command::new("aws")
+            .arg("ssm")
+            .arg("start-session")
+            .arg("--document-name")
+            .arg("AWS-StartPortForwardingSession")
+            .arg("--parameters")
+            .arg(format!(
+                r#"{{"portNumber": ["3389"], "localPortNumber": ["{}"]}}"#,
+                3389
+            ))
+            .arg("--target")
+            .arg(instance_id.unwrap())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?;
+
+        let status = child.wait().expect("Failed to wait on child");
+
+        println!("Process exited with status: {:?}", status);
+    }
+
     Ok(())
 }

@@ -8,6 +8,7 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
         KeyCode::Esc => {
             app.quit();
         }
+        KeyCode::Enter => app.start(),
         KeyCode::Char(ch) => {
             if key_event.modifiers == KeyModifiers::CONTROL {
                 match ch {

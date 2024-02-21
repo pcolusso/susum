@@ -1,12 +1,14 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
+    prelude::*,
     style::{Color, Style},
     text::Text,
-    widgets::{Block, BorderType, Borders, Paragraph},
+    widgets::{Block, BorderType, Borders, List, ListDirection, ListItem, Paragraph},
     Frame,
 };
 
 use crate::app::App;
+use crate::aws::Instance;
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, f: &mut Frame) {
@@ -20,47 +22,58 @@ pub fn render(app: &mut App, f: &mut Frame) {
         .margin(1)
         .constraints([
             Constraint::Length(3),
-            Constraint::Length(3),
             Constraint::Min(5),
             Constraint::Length(3),
         ])
         .split(f.size());
 
-    // Title line
-    let title_block = Block::default()
-        .borders(Borders::all())
-        .style(Style::default());
-    let title = Paragraph::new(Text::styled(
-        "Select EC2 Instance",
-        Style::default().fg(Color::Green),
-    ))
-    .block(title_block);
-    f.render_widget(title, chunks[0]);
-
     // Text Entry
     let entry_block = Block::default()
         .borders(Borders::all())
         .border_type(BorderType::Rounded)
+        .style(Style::default().fg(Color::Red))
         .title("Search for");
     let entry = Paragraph::new(app.query.clone()).block(entry_block);
-    f.render_widget(entry, chunks[1]);
+    f.render_widget(entry, chunks[0]);
 
-    let full = throbber_widgets_tui::Throbber::default()
-        .label("Running...")
-        .style(Style::default().fg(Color::Cyan))
-        .throbber_style(Style::default().fg(Color::Red))
-        .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
-        .use_type(throbber_widgets_tui::WhichUse::Spin);
-    f.render_stateful_widget(full, chunks[2], &mut app.throbber_state);
+    match app.instances {
+        Some(Ok(_)) => {
+            let items = app.filtered.iter().map(|f| f.display());
+            let list = List::new(items)
+                .block(
+                    Block::default()
+                        .title("Matching Instances (is running, is running windoze)")
+                        .borders(Borders::ALL),
+                )
+                .style(Style::default().fg(Color::White))
+                .highlight_style(Style::default().bg(Color::DarkGray).fg(Color::White))
+                .direction(ListDirection::TopToBottom);
+
+            f.render_stateful_widget(list, chunks[1], &mut app.list_state);
+        }
+        Some(Err(_)) => {
+            let message = Paragraph::new("Failed to load");
+            f.render_widget(message, chunks[1])
+        }
+        None => {
+            let full = throbber_widgets_tui::Throbber::default()
+                .label("Running...")
+                .style(Style::default().fg(Color::Cyan))
+                .throbber_style(Style::default().fg(Color::Red))
+                .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
+                .use_type(throbber_widgets_tui::WhichUse::Spin);
+            f.render_stateful_widget(full, chunks[1], &mut app.throbber_state);
+        }
+    }
 
     // Bottom line
     let status_block = Block::default()
         .borders(Borders::all())
         .style(Style::default().fg(Color::Green));
     let status = Paragraph::new(Text::styled(
-        "AWS Profile: smallapps-prod | Will use port [3389]",
+        format!("AWS Profile: {} | Will use port [3389]", app.profile),
         Style::default(),
     ))
     .block(status_block);
-    f.render_widget(status, chunks[3]);
+    f.render_widget(status, chunks[2]);
 }
