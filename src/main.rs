@@ -1,5 +1,6 @@
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use susum::ports::discover_free_port;
 use susum::aws::get_instances;
 use std::io;
 use std::process::{Command, Stdio};
@@ -27,6 +28,9 @@ async fn main() -> AppResult<()> {
         _ = tx.send(instances).await;
     });
 
+    let port = discover_free_port().await;
+    app.port = port;
+
     // Start the main loop.
     while app.running {
         // Render the user interface.
@@ -50,6 +54,7 @@ async fn main() -> AppResult<()> {
     // Exit the user interface.
     tui.exit()?;
 
+    // TODO: Panic if esc is used when list is filtered to none.
     let instance_id = match app.list_state.selected() {
         Some(i) => Some(app.filtered[i].instance_id.clone()),
         None => None,
@@ -64,7 +69,7 @@ async fn main() -> AppResult<()> {
             .arg("--parameters")
             .arg(format!(
                 r#"{{"portNumber": ["3389"], "localPortNumber": ["{}"]}}"#,
-                3389
+                port.expect("No ports free")
             ))
             .arg("--target")
             .arg(instance_id.unwrap())

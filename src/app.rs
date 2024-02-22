@@ -18,7 +18,8 @@ pub struct App {
     pub instances: Option<Result<Vec<Instance>>>,
     pub list_state: ListState,
     pub profile: String,
-    pub start_session: bool
+    pub start_session: bool,
+    pub port: Option<u16>
 }
 
 impl Default for App {
@@ -33,6 +34,7 @@ impl Default for App {
             list_state: ListState::default(),
             profile: std::env::var("AWS_PROFILE").unwrap_or("NOT SET".to_string()),
             start_session: false,
+            port: None
         }
     }
 }

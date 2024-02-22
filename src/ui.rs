@@ -29,7 +29,7 @@ pub fn render(app: &mut App, f: &mut Frame) {
     let entry_block = Block::default()
         .borders(Borders::all())
         .border_type(BorderType::Rounded)
-        .style(Style::default().fg(Color::Red))
+        .style(Style::default().fg(Color::from_u32(0x00ffac1c)))
         .title("Search for");
     let entry = Paragraph::new(app.query.clone()).block(entry_block);
     f.render_widget(entry, chunks[0]);
@@ -68,10 +68,16 @@ pub fn render(app: &mut App, f: &mut Frame) {
     let status_block = Block::default()
         .borders(Borders::all())
         .style(Style::default().fg(Color::Green));
-    let status = Paragraph::new(Text::styled(
-        format!("AWS Profile: {} | Will use port [3389]", app.profile),
-        Style::default(),
-    ))
-    .block(status_block);
-    f.render_widget(status, chunks[2]);
+    let status_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![
+                     Constraint::Percentage(50),
+                     Constraint::Percentage(50)
+        ])
+        .split(status_block.inner(chunks[2]));
+    let profile = Paragraph::new(format!("AWS Profile {}", app.profile));
+    f.render_widget(profile, status_layout[0]);
+    let port = Paragraph::new("Will use port [3389]");
+    f.render_widget(port, status_layout[1]);
+    f.render_widget(status_block, chunks[2]);
 }
