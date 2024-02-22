@@ -1,7 +1,6 @@
-use futures::FutureExt;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use susum::aws;
+use susum::aws::get_instances;
 use std::io;
 use std::process::{Command, Stdio};
 use susum::app::{App, AppResult};
@@ -21,26 +20,29 @@ async fn main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
-    let fut = aws::get_instances();
-    tokio::pin!(fut);
-    let mut loaded = false;
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+
+    tokio::spawn(async move {
+        let instances = get_instances().await;
+        _ = tx.send(instances).await;
+    });
 
     // Start the main loop.
     while app.running {
         // Render the user interface.
         tui.draw(&mut app)?;
         // Handle events.
-        match tui.events.next().await? {
-            Event::Tick => app.tick(),
-            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
-        }
-
-        if !loaded {
-            if let Some(i) = fut.as_mut().now_or_never() {
-                app.load(i);
-                loaded = true;
+        tokio::select! {
+            event = tui.events.next() => {
+                match event? {
+                    Event::Tick => app.tick(),
+                    Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
+                    Event::Mouse(_) => {}
+                    Event::Resize(_, _) => {}
+                }
+            }
+            Some(loaded) = rx.recv() => {
+                app.load(loaded)
             }
         }
     }

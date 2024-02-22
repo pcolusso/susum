@@ -34,12 +34,6 @@ impl Tag {
     }
 }
 
-impl Into<String> for Tag {
-    fn into(self) -> String {
-        format!("{}: {}", self.key, self.value)
-    }
-}
-
 pub async fn get_instances() -> Result<Vec<Instance>> {
     let region_provider = RegionProviderChain::default_provider().or_else("ap-southeast-2");
     let config = aws_config::from_env().region(region_provider).load().await;

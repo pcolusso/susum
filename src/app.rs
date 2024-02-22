@@ -1,4 +1,4 @@
-use crate::aws::{fuzzy_search_instances, get_instances, Instance};
+use crate::aws::{fuzzy_search_instances, Instance};
 
 use color_eyre::Result;
 use ratatui::widgets::ListState;
@@ -97,7 +97,7 @@ impl App {
                 new_filter.push(f.clone())
             }
             self.filtered = new_filter;
-            if self.filtered.len() > 0 && self.list_state.selected().is_none() {
+            if self.filtered.is_empty() && self.list_state.selected().is_none() {
                 *self.list_state.selected_mut() = Some(0);
             }
             *self.list_state.selected_mut() = Some(0)

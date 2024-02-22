@@ -1,14 +1,12 @@
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout},
-    prelude::*,
-    style::{Color, Style},
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style, Stylize},
     text::Text,
-    widgets::{Block, BorderType, Borders, List, ListDirection, ListItem, Paragraph},
+    widgets::{Block, BorderType, Borders, List, ListDirection, Paragraph},
     Frame,
 };
 
 use crate::app::App;
-use crate::aws::Instance;
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, f: &mut Frame) {
@@ -52,7 +50,7 @@ pub fn render(app: &mut App, f: &mut Frame) {
             f.render_stateful_widget(list, chunks[1], &mut app.list_state);
         }
         Some(Err(e)) => {
-            let message = Paragraph::new(format!("Failed to load\n{e}"));
+            let message = Paragraph::new(format!("Failed to load; AWS API reports \"{e}\"").red());
             f.render_widget(message, chunks[1])
         }
         None => {
