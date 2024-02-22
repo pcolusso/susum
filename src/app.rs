@@ -2,7 +2,7 @@ use crate::aws::{fuzzy_search_instances, get_instances, Instance};
 
 use color_eyre::Result;
 use ratatui::widgets::ListState;
-use std::error;
+use std::{error, sync::Arc};
 use throbber_widgets_tui::ThrobberState;
 
 /// Application result type.
@@ -15,7 +15,7 @@ pub struct App {
     pub throbber_state: throbber_widgets_tui::ThrobberState,
     pub query: String,
     pub filtered: Vec<Instance>,
-    pub instances: Option<Result<Vec<Instance>>>,
+    pub instances: Option<Arc<Result<Vec<Instance>>>>,
     pub list_state: ListState,
     pub profile: String,
     pub start_session: bool,
@@ -47,15 +47,12 @@ impl App {
         self.throbber_state.calc_next();
     }
 
-    pub async fn load(&mut self) {
-        if self.instances.is_none() {
-            let instances = get_instances().await;
-            match instances {
-                Ok(i) => self.instances = Some(Ok(i)),
-                Err(e) => self.instances = Some(Err(e)),
-            }
-            self.filter();
+    pub async fn load(&mut self, instances: Result<Vec<Instance>>) {
+        match instances {
+            Ok(i) => self.instances = Some(i.clone()),
+            Err(e) => self.instances = Some(Err(e)),
         }
+        self.filter();
     }
 
     /// Set running to false to quit the application.

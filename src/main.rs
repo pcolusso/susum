@@ -22,7 +22,6 @@ async fn main() -> AppResult<()> {
     // Start the main loop.
     while app.running {
         // Blocks, untill I can figure out this.
-        app.load().await;
         // Render the user interface.
         tui.draw(&mut app)?;
         // Handle events.
@@ -31,6 +30,9 @@ async fn main() -> AppResult<()> {
             Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
+            Event::DataLoad(instances) => {
+                app.load(instances);
+            }
         }
     }
 

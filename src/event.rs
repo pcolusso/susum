@@ -1,13 +1,13 @@
-use std::time::Duration;
+use std::{time::Duration, sync::Arc};
 
 use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
-
-use crate::app::AppResult;
+use crate::{app::AppResult, aws::{self, Instance}};
+use color_eyre::Result;
 
 /// Terminal events.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Event {
     /// Terminal tick.
     Tick,
@@ -17,6 +17,7 @@ pub enum Event {
     Mouse(MouseEvent),
     /// Terminal resize.
     Resize(u16, u16),
+    DataLoad(Arc<Result<Vec<Instance>>>)
 }
 
 /// Terminal event handler.
@@ -71,6 +72,12 @@ impl EventHandler {
                 };
             }
         });
+        let _send2 = sender.clone();
+        _ = tokio::spawn(async move {
+            let instances = aws::get_instances().await;
+            _send2.send(Event::DataLoad(Arc::new(instances))).unwrap();
+        });
+        
         Self {
             sender,
             receiver,
