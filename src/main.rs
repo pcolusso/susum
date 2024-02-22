@@ -1,5 +1,7 @@
+use futures::FutureExt;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use susum::aws;
 use std::io;
 use std::process::{Command, Stdio};
 use susum::app::{App, AppResult};
@@ -19,10 +21,12 @@ async fn main() -> AppResult<()> {
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
+    let fut = aws::get_instances();
+    tokio::pin!(fut);
+    let mut loaded = false;
+
     // Start the main loop.
     while app.running {
-        // Blocks, untill I can figure out this.
-        app.load().await;
         // Render the user interface.
         tui.draw(&mut app)?;
         // Handle events.
@@ -31,6 +35,13 @@ async fn main() -> AppResult<()> {
             Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
+        }
+
+        if !loaded {
+            if let Some(i) = fut.as_mut().now_or_never() {
+                app.load(i);
+                loaded = true;
+            }
         }
     }
 

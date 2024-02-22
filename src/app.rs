@@ -18,11 +18,12 @@ pub struct App {
     pub instances: Option<Result<Vec<Instance>>>,
     pub list_state: ListState,
     pub profile: String,
-    pub start_session: bool,
+    pub start_session: bool
 }
 
 impl Default for App {
     fn default() -> Self {
+
         Self {
             running: true,
             query: "".to_string(),
@@ -47,15 +48,9 @@ impl App {
         self.throbber_state.calc_next();
     }
 
-    pub async fn load(&mut self) {
-        if self.instances.is_none() {
-            let instances = get_instances().await;
-            match instances {
-                Ok(i) => self.instances = Some(Ok(i)),
-                Err(e) => self.instances = Some(Err(e)),
-            }
-            self.filter();
-        }
+    pub fn load(&mut self, instances: Result<Vec<Instance>>) {
+        self.instances = Some(instances);
+        self.filter();
     }
 
     /// Set running to false to quit the application.

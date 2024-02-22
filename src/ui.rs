@@ -36,7 +36,7 @@ pub fn render(app: &mut App, f: &mut Frame) {
     let entry = Paragraph::new(app.query.clone()).block(entry_block);
     f.render_widget(entry, chunks[0]);
 
-    match app.instances {
+    match app.instances.as_ref() {
         Some(Ok(_)) => {
             let items = app.filtered.iter().map(|f| f.display());
             let list = List::new(items)
@@ -51,13 +51,13 @@ pub fn render(app: &mut App, f: &mut Frame) {
 
             f.render_stateful_widget(list, chunks[1], &mut app.list_state);
         }
-        Some(Err(_)) => {
-            let message = Paragraph::new("Failed to load");
+        Some(Err(e)) => {
+            let message = Paragraph::new(format!("Failed to load\n{e}"));
             f.render_widget(message, chunks[1])
         }
         None => {
             let full = throbber_widgets_tui::Throbber::default()
-                .label("Running...")
+                .label("Loading...")
                 .style(Style::default().fg(Color::Cyan))
                 .throbber_style(Style::default().fg(Color::Red))
                 .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
