@@ -73,6 +73,7 @@ async fn main() -> AppResult<()> {
             ))
             .arg("--target")
             .arg(instance_id.unwrap())
+            .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?;
