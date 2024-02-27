@@ -1,12 +1,12 @@
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use susum::ports::discover_free_port;
-use susum::aws::get_instances;
 use std::io;
 use std::process::{Command, Stdio};
 use susum::app::{App, AppResult};
+use susum::aws::get_instances;
 use susum::event::{Event, EventHandler};
 use susum::handler::handle_key_events;
+use susum::ports::discover_free_port;
 use susum::tui::Tui;
 
 #[tokio::main]
@@ -55,12 +55,17 @@ async fn main() -> AppResult<()> {
     tui.exit()?;
 
     // TODO: Panic if esc is used when list is filtered to none.
-    let instance_id = match app.list_state.selected() {
-        Some(i) => Some(app.filtered[i].instance_id.clone()),
+    let instance = match app.list_state.selected() {
+        Some(i) => Some(app.filtered[i].clone()),
         None => None,
     };
 
-    if app.start_session && instance_id.is_some() {
+    if app.start_session && instance.is_some() {
+        println!(
+            "Connecting to {} on port {}",
+            &instance.clone().unwrap().display(),
+            app.port.unwrap()
+        );
         let mut child = Command::new("aws")
             .arg("ssm")
             .arg("start-session")
@@ -72,7 +77,7 @@ async fn main() -> AppResult<()> {
                 port.expect("No ports free")
             ))
             .arg("--target")
-            .arg(instance_id.unwrap())
+            .arg(instance.unwrap().instance_id)
             .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())

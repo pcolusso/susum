@@ -77,7 +77,7 @@ pub fn render(app: &mut App, f: &mut Frame) {
         .split(status_block.inner(chunks[2]));
     let profile = Paragraph::new(format!("AWS Profile {}", app.profile));
     f.render_widget(profile, status_layout[0]);
-    let port = Paragraph::new("Will use port [3389]");
+    let port = Paragraph::new(format!("Will use port [{:?}]", app.port));
     f.render_widget(port, status_layout[1]);
     f.render_widget(status_block, chunks[2]);
 }
