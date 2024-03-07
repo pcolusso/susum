@@ -6,7 +6,7 @@ use susum::app::{App, AppResult};
 use susum::aws::get_instances;
 use susum::event::{Event, EventHandler};
 use susum::handler::handle_key_events;
-use susum::ports::discover_free_port;
+use susum::ports::{discover_free_port, wait_port_freed};
 use susum::tui::Tui;
 
 #[tokio::main]
@@ -84,6 +84,10 @@ async fn main() -> AppResult<()> {
             .spawn()?;
 
         let status = child.wait().expect("Failed to wait on child");
+
+        if !wait_port_freed(app.port.unwrap()).await {
+            eprintln!("Port not freed!")
+        }
 
         println!("Process exited with status: {:?}", status);
     }

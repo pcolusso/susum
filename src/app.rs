@@ -19,12 +19,11 @@ pub struct App {
     pub list_state: ListState,
     pub profile: String,
     pub start_session: bool,
-    pub port: Option<u16>
+    pub port: Option<u16>,
 }
 
 impl Default for App {
     fn default() -> Self {
-
         Self {
             running: true,
             query: "".to_string(),
@@ -34,7 +33,7 @@ impl Default for App {
             list_state: ListState::default(),
             profile: std::env::var("AWS_PROFILE").unwrap_or("NOT SET".to_string()),
             start_session: false,
-            port: None
+            port: None,
         }
     }
 }
